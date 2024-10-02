@@ -24,7 +24,7 @@ router.get("/:id", async (req, res, next) => {
       [id]
     );
     if (results.rows.length === 0) {
-      throw new ExpressError(`No such company: ${code}`, 404);
+      throw new ExpressError(`No such invoice: ${id}`, 404);
     }
     const data = results.rows[0];
     const invoice = {
@@ -54,7 +54,7 @@ router.post("/", async (req, res, next) => {
       `INSERT INTO invoices (comp_code, amt) VALUES ($1, $2) RETURNING id, comp_code, amt, paid, add_date, paid_date`,
       [comp_code, amt]
     );
-    return res.json({ invoice: results.rows[0] });
+    return res.status(201).json({ invoice: results.rows[0] });
   } catch (err) {
     return next(err);
   }
@@ -67,11 +67,11 @@ router.put("/:id", async (req, res, next) => {
     const { id } = req.params;
     const { amt } = req.body;
     const results = await db.query(
-      `UPDATE invoices SET amt=$1 WHERE id=$2 RETURNING id, comp_code, amt, add_date, paid_date`,
+      `UPDATE invoices SET amt=$1 WHERE id=$2 RETURNING id, comp_code, paid, amt, add_date, paid_date`,
       [amt, id]
     );
     if (results.rowCount === 0) {
-      throw new ExpressError(`No such company: ${code}`, 404);
+      throw new ExpressError(`No such invoice: ${id}`, 404);
     }
     return res.json({ invoice: results.rows[0] });
   } catch (err) {
@@ -85,7 +85,7 @@ router.delete("/:id", async (req, res, next) => {
     const { id } = req.params;
     const results = await db.query(`DELETE FROM invoices WHERE id=$1`, [id]);
     if (results.rowCount === 0) {
-      throw new ExpressError(`No such company: ${id}`, 404);
+      throw new ExpressError(`No such invoice: ${id}`, 404);
     }
     return res.json({ status: "Deleted" });
   } catch (err) {
