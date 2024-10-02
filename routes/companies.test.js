@@ -86,6 +86,21 @@ describe("POST /companies", () => {
       },
     });
   });
+  test("Company code is slugified.", async () =>{
+    const response = await request(app).post(`/companies`).send({
+      code: "slugified code**",
+      name: "slug test",
+      description: "this is a slug test",
+    });
+    expect(response.statusCode).toEqual(201);
+    expect(response.body).toEqual({
+      company: {
+        code: "slugifiedcode",
+        name: "slug test",
+        description: "this is a slug test",
+      },
+    });
+  })
 });
 
 // PUT /comapnies - Returns update company object: {company: {code, name, description}}
