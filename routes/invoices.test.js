@@ -97,14 +97,19 @@ describe("POST /invoices", () => {
   });
 });
 
-// **PUT /invoices/[id] :** Updates an invoice. If invoice cannot be found, returns a 404.
-// Needs to be passed in a JSON body of `{amt}` Returns: `{invoice: {id, comp_code, amt, paid, add_date, paid_date}}`
+// PUT /invoices/[id] : Updates an invoice. If invoice cannot be found, returns a 404.
+// Needs to be passed in a JSON body of {amt, paid}
+// • If paying unpaid invoice: sets paid_date to today
+// • If un-paying: sets paid_date to null
+// • Else: keep current paid_date
+// Returns: {invoice: {id, comp_code, amt, paid, add_date, paid_date}}
 describe("PUT /invoices/:id", () => {
-  test("Updates an invoice", async () => {
+  test("Updates an invoice that has not been paid", async () => {
     const response = await request(app)
       .put(`/invoices/${testInvoice.id}`)
       .send({
         amt: 10,
+        paid: true
       });
     expect(response.statusCode).toEqual(200);
     expect(response.body).toEqual({
@@ -112,6 +117,30 @@ describe("PUT /invoices/:id", () => {
           id: testInvoice.id,
           comp_code: testInvoice.comp_code,
           amt: 10,
+          paid: true,
+          add_date: expect.any(String), 
+          paid_date: expect.any(String),
+        },
+      });
+  });
+  test("Updates an invoice that has already been paid", async () => {
+    // update testInvoice to have paid as true
+    await db.query(
+      `UPDATE invoices SET paid=true, paid_date=CURRENT_DATE WHERE id=$1`,
+      [testInvoice.id]
+    );
+    const response = await request(app)
+      .put(`/invoices/${testInvoice.id}`)
+      .send({
+        amt: 343,
+        paid: false
+      });
+    expect(response.statusCode).toEqual(200);
+    expect(response.body).toEqual({
+        invoice: {
+          id: testInvoice.id,
+          comp_code: testInvoice.comp_code,
+          amt: 343,
           paid: false,
           add_date: expect.any(String), 
           paid_date: null,
