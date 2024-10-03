@@ -30,6 +30,8 @@ afterEach(async () => {
   // delete any data created by the test
   await db.query("DELETE from companies");
   await db.query("DELETE from invoices");
+  await db.query("DELETE from industries");
+  await db.query("DELETE from company_industries");
 });
 
 afterAll(async () => {
@@ -51,6 +53,9 @@ describe("GET /companies", () => {
 // GET /companies/:code - Return obj of company: {company: {code, name, description, invoices: [id, ...]}}
 describe("GET /companies/:code", () => {
   test("Gets a single company", async () => {
+    // create test industry and make relationship between company and industry
+    await db.query(`INSERT INTO industries (code, industry) VALUES('tech', 'Technology')`)
+    await db.query(`INSERT INTO company_industries (comp_code, industry_code) VALUES('test', 'tech')`)
     const response = await request(app).get(`/companies/${testCompany.code}`);
     expect(response.statusCode).toEqual(200);
     expect(response.body).toEqual({
@@ -59,6 +64,7 @@ describe("GET /companies/:code", () => {
         name: testCompany.name,
         description: testCompany.description,
         invoices: [testInvoice.id],
+        industries:["Technology"]
       },
     });
   });
@@ -103,7 +109,7 @@ describe("POST /companies", () => {
   })
 });
 
-// PUT /comapnies - Returns update company object: {company: {code, name, description}}
+// PUT /companies - Returns update company object: {company: {code, name, description}}
 describe("PUT /companies/:code", () => {
   test("Updates a company", async () => {
     const response = await request(app)
